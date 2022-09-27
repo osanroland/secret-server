@@ -2,14 +2,7 @@
 
 class SecretController extends BaseController
 {
-    protected $secretGateway;
-
-    public function __construct()
-    {
-        $this->secretGateway = new SecretGateway();
-
-    }
-
+   
     public function processRequest($uri)
     {
         $strErrorDesc = '';
@@ -17,24 +10,30 @@ class SecretController extends BaseController
  
         if (strtoupper($requestMethod) == 'GET') {
             try {
-
+                $secretGateway = new SecretGateway();
                 $hash=$this->getUriSegments($uri)[3];
                 //error_log(print_r(($hash), TRUE)); 
-                $foundSecret = $this->secretGateway->getSecret(strval($hash));
-                $responseData = json_encode($foundSecret);
+                $foundSecret = $secretGateway->getSecret(strval($hash));
+                if(is_array($foundSecret)){
+                    $responseData = json_encode($foundSecret);
+                    $secretGateway->updateRemainingViews(strval($hash),$foundSecret[0]['remainingViews']);
+                }else{
+                    throw new Error($foundSecret);
+                }
+                
             } catch (Error $e) {
-                $strErrorDesc = $e->getMessage().'Something went wrong! Please contact support.';
-                $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                $strErrorDesc = $e->getMessage();
+                $strErrorHeader = 'HTTP/1.1 404 Not Found';
             }
         } else if(strtoupper($requestMethod) == 'POST'){
             try {
-
+                $secretGateway = new SecretGateway();
                 $input = (array) json_decode(file_get_contents('php://input'), TRUE);
                 // if (! $this->validatePerson($input)) {
                 //     return $this->unprocessableEntityResponse();
                 // }
                 
-                $responseData=$this->secretGateway->createSecret($input);
+                $responseData=$secretGateway->createSecret($input);
                 //error_log(print_r(json_encode($responseData), TRUE)); 
                 return json_encode($responseData);
                 

@@ -46,6 +46,20 @@ class DatabaseConnector
         }
         return false;
     }
+
+    public function update($query = "" , $params = [])
+    {
+        try {
+            $stmt = $this->executeStatement( "update" , $query , $params );
+            $result = $stmt->affected_rows;
+            $stmt->close();
+ 
+            return $result;
+        } catch(Exception $e) {
+            throw New Exception( $e->getMessage() );
+        }
+        return false;
+    }
  
     private function executeStatement($type="", $query = "" , $params = [])
     {
@@ -63,6 +77,9 @@ class DatabaseConnector
                 }elseif($type == 'get')
                 {
                     $stmt->bind_param('s', $params[0]);
+                }elseif($type == 'update')
+                {
+                    $stmt->bind_param('is', $params[0], $params[1]);
                 }
                 
             }

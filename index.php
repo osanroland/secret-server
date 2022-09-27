@@ -12,6 +12,6 @@ $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
  
 require PROJECT_ROOT_PATH . "/Controller/Api/SecretController.php";
  
-$objFeedController = new SecretController();
-$objFeedController->processRequest($uri);
+$controller = new SecretController();
+$controller->processRequest($uri);
 ?>
