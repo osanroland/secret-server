@@ -20,7 +20,7 @@ class SecretGateway extends DatabaseConnector
         $now = new DateTime();
         $now=$now->format('Y-m-d H:i:s');
 
-        if( $res[0]['remaining_views'] !== 0 && $res[0]['expires_at'] > $now)
+        if( $res[0]['remaining_views'] !== 0 && ($res[0]['expires_at'] > $now || $res[0]['expires_at'] == null ))
         {
             $validSecret[] = array('hash'=> $res[0]['hash'], 'secretText'=> $res[0]['secret_text'], 'createdAt'=> $res[0]['created_at'], 'expiresAt'=> $res[0]['expires_at'],'remainingViews'=>$res[0]['remaining_views']-1);
         }else
@@ -38,7 +38,7 @@ class SecretGateway extends DatabaseConnector
         $remainingMinutes=$input['expireAfter'];
         $now = new DateTime();
         $createdAt=$now->format('Y-m-d H:i:s');
-        $expiresAt=$now->modify("+". $remainingMinutes ." minutes")->format('Y-m-d H:i:s');
+        ($remainingMinutes == 0) ? $expiresAt=null : $expiresAt=$now->modify("+". $remainingMinutes ." minutes")->format('Y-m-d H:i:s');
         $remainingViews=$input['expireAfterViews'];
         array_push($queryParams,$hash,$secretText,$createdAt,$expiresAt,$remainingViews);
         
@@ -53,15 +53,14 @@ class SecretGateway extends DatabaseConnector
         return $createdSecret;
     }
 
-    public function updateRemainingViews($hash, $remainingViews){
+    public function updateRemainingViews($hash, $remainingViews)
+    {
         $queryParams=[];
         array_push($queryParams,$remainingViews,$hash);
         
         $query = "UPDATE secrets SET remaining_views=? WHERE hash=?";
         $res = $this->update($query, $queryParams);
 
-        error_log(print_r($res, TRUE)); 
-        
         return $res;
     }
 }

@@ -2,17 +2,28 @@
 
 class SecretController extends BaseController
 {
-   
+    private $version=CURRENT_VERSION;
+    private $path='secret';
     public function processRequest($uri)
     {
         $strErrorDesc = '';
         $requestMethod = $_SERVER["REQUEST_METHOD"];
- 
-        if (strtoupper($requestMethod) == 'GET') {
+        $uri=$this->getUriSegments($uri);
+        
+        if($uri[1] !== $this->version)
+        {
+            $strErrorDesc="Api version is not correct! The current version is: ". $this->version;
+            $strErrorHeader = 'HTTP/1.1 404 Not Found';
+        }
+        elseif($uri[2] !== $this->path)
+        {
+            $strErrorDesc="URL path is incorrect!";
+            $strErrorHeader = 'HTTP/1.1 404 Not Found';
+        }
+        elseif (strtoupper($requestMethod) == 'GET') {
             try {
                 $secretGateway = new SecretGateway();
                 $hash=$this->getUriSegments($uri)[3];
-                //error_log(print_r(($hash), TRUE)); 
                 $foundSecret = $secretGateway->getSecret(strval($hash));
                 if(is_array($foundSecret)){
                     $responseData = json_encode($foundSecret);
@@ -29,16 +40,16 @@ class SecretController extends BaseController
             try {
                 $secretGateway = new SecretGateway();
                 $input = (array) json_decode(file_get_contents('php://input'), TRUE);
-                // if (! $this->validatePerson($input)) {
-                //     return $this->unprocessableEntityResponse();
-                // }
-                
-                $responseData=$secretGateway->createSecret($input);
-                //error_log(print_r(json_encode($responseData), TRUE)); 
-                return json_encode($responseData);
-                
+                if (! $this->validatesecret($input))
+                {
+                    throw new Error('The post body format is not correct! Please heck the documentation!');
+                }else
+                {
+                    $responseData=$secretGateway->createSecret($input);
+                    return json_encode($responseData);
+                }
             } catch (Error $e) {
-                $strErrorDesc = $e->getMessage().'Something went wrong! Please contact support.';
+                $strErrorDesc = $e->getMessage();
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         }
@@ -58,5 +69,16 @@ class SecretController extends BaseController
                 array('Content-Type: application/json', $strErrorHeader)
             );
         }
+    }
+
+    public function validateSecret($input)
+    {
+        (isset($input['secret'])) ? $secret=$input['secret'] : null;
+        (isset($input['expireAfterViews'])) ? $expireAfterViews=$input['expireAfterViews'] : null;
+        (isset($input['expireAfter'])) ? $expireAfter=$input['expireAfter'] : null;
+
+        if(!isset($secret) || !is_string($secret) || $expireAfterViews <= 0 || !isset($expireAfterViews) || !isset($expireAfter)) return false;
+
+        return true;
     }
 }
