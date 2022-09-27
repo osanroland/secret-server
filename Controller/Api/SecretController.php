@@ -46,7 +46,8 @@ class SecretController extends BaseController
                 }else
                 {
                     $responseData=$secretGateway->createSecret($input);
-                    return json_encode($responseData);
+                    $responseData=json_encode($responseData);
+                    return $responseData;
                 }
             } catch (Error $e) {
                 $strErrorDesc = $e->getMessage();
